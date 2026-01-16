@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, Search, CheckSquare, ExternalLink, SkipForward } from "lucide-react";
+import { FileText, Search, CheckSquare, SkipForward } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EvidenceLink } from "./EvidenceLink";
 import { cn } from "@/lib/utils";
 
 interface StreamingResultProps {
@@ -189,13 +190,10 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
                   <span className="text-success font-medium">95%</span>
                 </div>
               </div>
-              <a href="#" className={cn(
-                "inline-flex items-center gap-1 text-xs text-primary hover:underline",
-                !isSkipped && "animate-fade-in"
-              )}>
-                <span>근거: 메시지 5</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <EvidenceLink 
+                messageId={5}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
+              />
             </>
           ) : showTyping && displayedText ? (
             <p className="text-sm font-medium text-foreground">
@@ -253,13 +251,13 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
             )}
           </ol>
           {(completed.length === sections[2].items.length || isComplete) && (
-            <a href="#" className={cn(
-              "inline-flex items-center gap-1 text-xs text-primary hover:underline",
-              !isSkipped && "animate-fade-in"
-            )}>
-              <span>근거: 메시지 9</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+            <EvidenceLink 
+              messageId={9}
+              className={cn(
+                "inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer",
+                !isSkipped && "animate-fade-in"
+              )}
+            />
           )}
         </div>
       </section>

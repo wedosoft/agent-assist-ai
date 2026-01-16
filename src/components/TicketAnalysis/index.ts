@@ -3,5 +3,6 @@ export { AnalysisLoading } from "./AnalysisLoading";
 export { AnalysisResult } from "./AnalysisResult";
 export { StreamingResult } from "./StreamingResult";
 export { StreamingText } from "./StreamingText";
+export { EvidenceLink } from "./EvidenceLink";
 export { FeedbackSection } from "./FeedbackSection";
 export { ActionButtons } from "./ActionButtons";
