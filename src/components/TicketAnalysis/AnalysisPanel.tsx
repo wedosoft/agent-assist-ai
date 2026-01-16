@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnalysisLoading } from "./AnalysisLoading";
-import { AnalysisResult } from "./AnalysisResult";
+import { StreamingResult } from "./StreamingResult";
 import { FeedbackSection } from "./FeedbackSection";
 import { ActionButtons } from "./ActionButtons";
 
@@ -11,21 +11,18 @@ interface AnalysisPanelProps {
 }
 
 export const AnalysisPanel = ({ onClose }: AnalysisPanelProps) => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "streaming" | "complete">("idle");
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
 
   const handleAnalyze = () => {
-    setIsAnalyzing(true);
-    setIsComplete(false);
+    setStatus("loading");
     setProgress(0);
     
     const steps = [
       "티켓 내용 읽는 중...",
       "대화 이력 분석 중...",
-      "AI 분석 중...",
-      "결과 생성 중..."
+      "AI 분석 중..."
     ];
     
     let stepIndex = 0;
@@ -36,10 +33,14 @@ export const AnalysisPanel = ({ onClose }: AnalysisPanelProps) => {
         stepIndex++;
       } else {
         clearInterval(interval);
-        setIsAnalyzing(false);
-        setIsComplete(true);
+        // Transition to streaming state
+        setStatus("streaming");
       }
-    }, 800);
+    }, 600);
+  };
+
+  const handleStreamingComplete = () => {
+    setStatus("complete");
   };
 
   const handleRegenerate = () => {
@@ -47,8 +48,7 @@ export const AnalysisPanel = ({ onClose }: AnalysisPanelProps) => {
   };
 
   const handleForceRefresh = () => {
-    setIsComplete(false);
-    setIsAnalyzing(false);
+    setStatus("idle");
   };
 
   return (
@@ -68,7 +68,7 @@ export const AnalysisPanel = ({ onClose }: AnalysisPanelProps) => {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {!isAnalyzing && !isComplete && (
+        {status === "idle" && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,18 +87,22 @@ export const AnalysisPanel = ({ onClose }: AnalysisPanelProps) => {
           </div>
         )}
 
-        {isAnalyzing && (
+        {status === "loading" && (
           <AnalysisLoading progress={progress} currentStep={currentStep} />
         )}
 
-        {isComplete && (
+        {(status === "streaming" || status === "complete") && (
           <>
-            <AnalysisResult />
-            <FeedbackSection />
-            <ActionButtons 
-              onRegenerate={handleRegenerate}
-              onForceRefresh={handleForceRefresh}
-            />
+            <StreamingResult onComplete={handleStreamingComplete} />
+            {status === "complete" && (
+              <>
+                <FeedbackSection />
+                <ActionButtons 
+                  onRegenerate={handleRegenerate}
+                  onForceRefresh={handleForceRefresh}
+                />
+              </>
+            )}
           </>
         )}
       </div>
