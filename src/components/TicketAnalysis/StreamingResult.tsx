@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { FileText, Search, CheckSquare, ExternalLink } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { FileText, Search, CheckSquare, ExternalLink, SkipForward } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface StreamingResultProps {
@@ -49,8 +50,27 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
   const [displayedText, setDisplayedText] = useState("");
   const [completedItems, setCompletedItems] = useState<Map<string, string[]>>(new Map());
   const [isComplete, setIsComplete] = useState(false);
+  const [isSkipped, setIsSkipped] = useState(false);
+
+  // Skip to show all content immediately
+  const handleSkip = useCallback(() => {
+    setIsSkipped(true);
+    
+    // Populate all completed items
+    const allItems = new Map<string, string[]>();
+    sections.forEach(section => {
+      allItems.set(section.id, section.items);
+    });
+    setCompletedItems(allItems);
+    setDisplayedText("");
+    setCurrentSection(sections.length);
+    setIsComplete(true);
+    onComplete?.();
+  }, [onComplete]);
 
   useEffect(() => {
+    if (isSkipped) return;
+    
     if (currentSection >= sections.length) {
       setIsComplete(true);
       onComplete?.();
@@ -60,18 +80,23 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
     const section = sections[currentSection];
     if (currentItem >= section.items.length) {
       // Move to next section
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setCurrentSection(currentSection + 1);
         setCurrentItem(0);
         setDisplayedText("");
       }, 200);
-      return;
+      return () => clearTimeout(timeout);
     }
 
     const text = section.items[currentItem];
     let charIndex = 0;
 
     const typeInterval = setInterval(() => {
+      if (isSkipped) {
+        clearInterval(typeInterval);
+        return;
+      }
+      
       if (charIndex <= text.length) {
         setDisplayedText(text.slice(0, charIndex));
         charIndex++;
@@ -92,25 +117,30 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
     }, 12);
 
     return () => clearInterval(typeInterval);
-  }, [currentSection, currentItem, onComplete]);
+  }, [currentSection, currentItem, onComplete, isSkipped]);
+
+  const isStreaming = !isComplete && !isSkipped;
 
   const renderSummarySection = () => {
     const completed = completedItems.get("summary") || [];
     const isActive = currentSection === 0;
-    const showTyping = isActive && currentItem < sections[0].items.length;
+    const showTyping = isActive && currentItem < sections[0].items.length && !isSkipped;
 
     return (
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">요약</h3>
-          {isActive && !isComplete && (
+          {isActive && isStreaming && (
             <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
           )}
         </div>
         <ul className="space-y-2 pl-6">
           {completed.map((item, index) => (
-            <li key={index} className="text-sm text-foreground leading-relaxed flex items-start gap-2 animate-fade-in">
+            <li key={index} className={cn(
+              "text-sm text-foreground leading-relaxed flex items-start gap-2",
+              !isSkipped && "animate-fade-in"
+            )}>
               <span className="text-muted-foreground mt-1.5 flex-shrink-0">•</span>
               <span>{item}</span>
             </li>
@@ -132,7 +162,7 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
   const renderCauseSection = () => {
     const completed = completedItems.get("cause") || [];
     const isActive = currentSection === 1;
-    const showTyping = isActive && currentItem < sections[1].items.length;
+    const showTyping = isActive && currentItem < sections[1].items.length && !isSkipped;
     const isVisible = currentSection >= 1 || completed.length > 0;
 
     if (!isVisible) return null;
@@ -142,7 +172,7 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
         <div className="flex items-center gap-2">
           <Search className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">추정 원인</h3>
-          {isActive && !isComplete && (
+          {isActive && isStreaming && (
             <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
           )}
         </div>
@@ -150,7 +180,7 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
           {completed.length > 0 ? (
             <>
               <p className="text-sm font-medium text-foreground">{completed[0]}</p>
-              <div className="flex items-center gap-3 text-xs animate-fade-in">
+              <div className={cn("flex items-center gap-3 text-xs", !isSkipped && "animate-fade-in")}>
                 <span className="text-muted-foreground">신뢰도:</span>
                 <div className="flex items-center gap-1">
                   <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -159,7 +189,10 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
                   <span className="text-success font-medium">95%</span>
                 </div>
               </div>
-              <a href="#" className="inline-flex items-center gap-1 text-xs text-primary hover:underline animate-fade-in">
+              <a href="#" className={cn(
+                "inline-flex items-center gap-1 text-xs text-primary hover:underline",
+                !isSkipped && "animate-fade-in"
+              )}>
                 <span>근거: 메시지 5</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
@@ -178,7 +211,7 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
   const renderActionSection = () => {
     const completed = completedItems.get("action") || [];
     const isActive = currentSection === 2;
-    const showTyping = isActive && currentItem < sections[2].items.length;
+    const showTyping = isActive && currentItem < sections[2].items.length && !isSkipped;
     const isVisible = currentSection >= 2 || completed.length > 0;
 
     if (!isVisible) return null;
@@ -188,7 +221,7 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
         <div className="flex items-center gap-2">
           <CheckSquare className="w-4 h-4 text-success" />
           <h3 className="text-sm font-semibold text-foreground">권장 조치</h3>
-          {isActive && !isComplete && (
+          {isActive && isStreaming && (
             <span className="inline-block w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
           )}
         </div>
@@ -201,7 +234,10 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
           </div>
           <ol className="space-y-2 text-sm text-foreground">
             {completed.map((item, index) => (
-              <li key={index} className="flex items-start gap-2 animate-fade-in">
+              <li key={index} className={cn(
+                "flex items-start gap-2",
+                !isSkipped && "animate-fade-in"
+              )}>
                 <span className="text-muted-foreground font-medium">{index + 1}.</span>
                 <span>{item}</span>
               </li>
@@ -217,7 +253,10 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
             )}
           </ol>
           {(completed.length === sections[2].items.length || isComplete) && (
-            <a href="#" className="inline-flex items-center gap-1 text-xs text-primary hover:underline animate-fade-in">
+            <a href="#" className={cn(
+              "inline-flex items-center gap-1 text-xs text-primary hover:underline",
+              !isSkipped && "animate-fade-in"
+            )}>
               <span>근거: 메시지 9</span>
               <ExternalLink className="w-3 h-3" />
             </a>
@@ -229,13 +268,28 @@ export const StreamingResult = ({ onComplete }: StreamingResultProps) => {
 
   return (
     <div className="space-y-5">
+      {/* Skip Button - Only shows during streaming */}
+      {isStreaming && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-7 px-2"
+            onClick={handleSkip}
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+            건너뛰기
+          </Button>
+        </div>
+      )}
+
       {renderSummarySection()}
       {renderCauseSection()}
       {renderActionSection()}
 
       {/* AI Disclaimer - shows after completion */}
       {isComplete && (
-        <div className="bg-accent rounded-lg p-3 animate-fade-in">
+        <div className={cn("bg-accent rounded-lg p-3", !isSkipped && "animate-fade-in")}>
           <p className="text-xs text-accent-foreground">
             이 분석은 AI가 자동 생성한 것입니다. 최종 판단은 상담원의 책임입니다.
           </p>
