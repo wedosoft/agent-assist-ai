@@ -1,0 +1,25 @@
+{
+  "platform-version": "2.3",
+  "product": {
+    "freshdesk": {
+      "location": {
+        "ticket_sidebar": {
+          "url": "index.html",
+          "icon": "icon.svg"
+        }
+      },
+      "events": {
+        "onTicketUpdate": {
+          "handler": "onTicketUpdateHandler"
+        }
+      }
+    }
+  },
+  "whitelisted-domains": [
+    "https://*.freshdesk.com"
+  ],
+  "engines": {
+    "node": "18.20.5",
+    "fdk": "9.1.3"
+  }
+}

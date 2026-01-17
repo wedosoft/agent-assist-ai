@@ -1,0 +1,16 @@
+{
+  "api_key": {
+    "display_name": "AI API Key",
+    "description": "AI 서비스를 사용하기 위한 API 키",
+    "type": "text",
+    "required": false,
+    "secure": true
+  },
+  "api_endpoint": {
+    "display_name": "AI API Endpoint",
+    "description": "AI 분석 API 엔드포인트 URL",
+    "type": "text",
+    "required": false,
+    "default_value": ""
+  }
+}

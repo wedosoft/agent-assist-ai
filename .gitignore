@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# FDK specific
+.fdk
+*.zip
+coverage/
